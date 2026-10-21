@@ -258,7 +258,7 @@ function homePage({ palavras, series, proximo, assets }) {
 
   return `
 <section class="next-gp card" id="proximo-gp" data-gp="${escapeHtml(JSON.stringify(proximo))}" aria-live="polite">
-  <p class="eyebrow">📅 Próximo GP</p>
+  <p class="eyebrow">Próximo grupo de jovens</p>
   <noscript><p>Ative o JavaScript para ver o próximo encontro.</p></noscript>
 </section>
 
@@ -381,7 +381,6 @@ async function build() {
   // Próximo GP: nota "Próximo GP.md" na raiz de 03-Igreja
   const gpFile = await findFile(CONTENT, 'Próximo GP.md');
   const gp = gpFile ? (await readNote(gpFile)).data : {};
-  const gpPalavra = links.get(nfc(linkTarget(gp.palavra) ?? ''));
   const proximo = {
     data: gp.data ? String(gp.data) : '',
     horario: gp['horário'] ? String(gp['horário']) : '',
@@ -389,7 +388,6 @@ async function build() {
     endereco: gp['endereço'] ?? '',
     mapa: gp.mapa ?? '',
     aviso: gp.aviso ?? '',
-    palavra: gpPalavra ? { title: gpPalavra.title, url: gpPalavra.url } : null,
   };
 
   // Saída

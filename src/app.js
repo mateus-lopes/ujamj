@@ -1,6 +1,6 @@
-// ---------- Próximo GP ----------
+// ---------- Próximo grupo de jovens ----------
 // A data vem da nota "Próximo GP.md". Se ela já passou, mostramos a próxima quarta com "local a definir"
-// para nunca exibir o endereço de um encontro antigo.
+// para nunca exibir o endereço de um encontro antigo. O tema não aparece: é surpresa.
 
 const TZ = 'America/Sao_Paulo';
 const todayISO = () => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
@@ -36,19 +36,24 @@ function renderNextGp(el) {
   // Sem nome de local, o próprio endereço vira a linha principal
   const place = gp.local || gp.endereco;
   const where = confirmed && place
-    ? `<p class="gp-local">📍 ${esc(place)}</p>${gp.local && gp.endereco ? `<p class="gp-endereco">${esc(gp.endereco)}</p>` : ''}`
-    : '<p class="gp-local muted">📍 Local a definir</p>';
-  const mapUrl = gp.mapa || (gp.endereco ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(gp.endereco)}` : '');
-  const actions = confirmed && mapUrl
-    ? `<div class="actions"><a class="button" href="${esc(mapUrl)}" target="_blank" rel="noopener">Abrir no mapa</a></div>` : '';
-  const palavra = confirmed && gp.palavra
-    ? `<p class="gp-palavra">🗣️ Tema: <a href="${esc(gp.palavra.url)}">${esc(gp.palavra.title)}</a></p>` : '';
+    ? `<p class="${gp.local ? 'gp-local' : 'gp-endereco'}">${esc(place)}</p>${gp.local && gp.endereco ? `<p class="gp-endereco">${esc(gp.endereco)}</p>` : ''}`
+    : '<p class="gp-endereco muted">Local a definir</p>';
+  const query = gp.endereco || gp.local;
+  const mapUrl = gp.mapa || (query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : '');
+  const map = confirmed && query
+    ? `<div class="gp-map">
+        <iframe src="https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=16&output=embed" title="Mapa do local" loading="lazy" tabindex="-1" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <a class="gp-map-button" href="${esc(mapUrl)}" target="_blank" rel="noopener">Abrir no mapa ↗</a>
+      </div>`
+    : '';
   const aviso = confirmed && gp.aviso ? `<p class="gp-aviso">${esc(gp.aviso)}</p>` : '';
 
-  el.innerHTML = `
-    <p class="eyebrow">📅 Próximo GP ${badge}</p>
-    <p class="gp-when">${when}</p>
-    ${where}${palavra}${aviso}${actions}`;
+  el.innerHTML = `${map}
+    <div class="gp-body">
+      <p class="eyebrow">${badge}Próximo grupo de jovens</p>
+      <p class="gp-when">${when}</p>
+      ${where}${aviso}
+    </div>`;
 }
 
 // ---------- Busca ----------

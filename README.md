@@ -14,7 +14,7 @@ Obsidian (03-Igreja)  ──git push──▶  GitHub Action (cortex)  ──bui
 |---|---|---|
 | Palavra | `03-Igreja/Palavras/*.md` | `publicar: true` no frontmatter |
 | Série | `03-Igreja/Séries/*.md` | `publicar: true` no frontmatter |
-| Próximo GP | `03-Igreja/Próximo GP.md` | Atualizar `data`, `horário`, `local`, `endereço`, `mapa`, `palavra`, `aviso` |
+| Próximo GP | `03-Igreja/Próximo GP.md` | Atualizar `data`, `horário`, `local`, `endereço`, `mapa`, `aviso` |
 
 Notas sem `publicar: true` nunca saem do vault. O template de palavra já nasce com `publicar: false`.
 
