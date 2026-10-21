@@ -211,6 +211,19 @@ function palavraCard(p) {
 </a>`;
 }
 
+// Card da grade "Todas as palavras": palavras de série ocupam a linha inteira e mostram o resumo maior
+function gridCard(p) {
+  const [, m, d] = p.date.split('-');
+  const meta = [`${Number(d)} ${MONTHS[Number(m) - 1]}`, p.data.contexto].filter(Boolean).map(escapeHtml).join(' · ');
+  const serie = p.serie ? ` · <span class="meta-serie">Série ${escapeHtml(p.serie.title)}</span>` : '';
+  return `<a class="card grid-card${p.serie ? ' wide' : ''}" href="${p.url}">
+  <p class="meta">${meta}${serie}</p>
+  <h3>${escapeHtml(p.title)}</h3>
+  ${p.excerpt ? `<p class="excerpt">${escapeHtml(p.excerpt)}</p>` : ''}
+  ${p.data.tema ? `<div class="chips"><span class="chip">${escapeHtml(p.data.tema)}</span></div>` : ''}
+</a>`;
+}
+
 // Card editorial da última palavra: data em destaque, texto base e tempo de leitura
 function featuredCard(p) {
   const [, m, d] = p.date.split('-');
@@ -236,7 +249,7 @@ function featuredCard(p) {
 
 function homePage({ palavras, series, proximo, assets }) {
   const [ultima] = palavras;
-  const list = palavras.map((p) => `<li data-search="${escapeHtml(p.search)}">${palavraCard(p)}</li>`).join('\n');
+  const list = palavras.map((p) => `<li${p.serie ? ' class="wide"' : ''} data-search="${escapeHtml(p.search)}">${gridCard(p)}</li>`).join('\n');
   const seriesHtml = series.map((s) => `<a class="card serie-card" href="${s.url}">
     <p class="meta">${s.palavras.length} ${s.palavras.length === 1 ? 'palavra' : 'palavras'}${s.data.status ? ` · ${escapeHtml(s.data.status)}` : ''}</p>
     <h3>${escapeHtml(s.title)}</h3>
@@ -265,7 +278,7 @@ ${series.length ? `<section>
     <span class="sr-only">Buscar</span>
     <input type="search" id="busca" placeholder="Buscar por tema, versículo, palavra…" autocomplete="off">
   </label>
-  <ul class="palavra-list" id="lista">
+  <ul class="palavra-list palavra-grid" id="lista">
 ${list}
   </ul>
   <p class="empty" id="vazio" hidden>Nenhuma palavra encontrada.</p>
