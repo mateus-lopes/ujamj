@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#8c2f1f"/>
+  <g id="mark">
+    <rect x="241" y="84" width="30" height="128" rx="8" fill="#f2c46d"/>
+    <rect x="208" y="118" width="96" height="28" rx="8" fill="#f2c46d"/>
+    <path d="M250 262c-40-26-92-34-142-26v158c50-8 102 0 142 26z" fill="#fffaf2"/>
+    <path d="M262 262c40-26 92-34 142-26v158c-50-8-102 0-142 26z" fill="#fffaf2" opacity=".88"/>
+  </g>
+</svg>
