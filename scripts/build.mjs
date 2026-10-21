@@ -38,6 +38,12 @@ function shortDate(iso) {
   const [y, m, d] = iso.split('-');
   return y && m && d ? `${Number(d)} ${MONTHS[Number(m) - 1]} ${y}` : iso;
 }
+function weekdayOf(iso) {
+  const date = new Date(`${iso}T12:00:00Z`);
+  if (Number.isNaN(date.getTime())) return '';
+  const text = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', timeZone: 'UTC' }).format(date);
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
 function longDate(iso) {
   const date = new Date(`${iso}T12:00:00Z`);
   if (Number.isNaN(date.getTime())) return iso;
@@ -196,12 +202,35 @@ function chips(p) {
   return items.length ? `<div class="chips">${items.join('')}</div>` : '';
 }
 
-function palavraCard(p, { featured = false } = {}) {
-  return `<a class="card palavra-card${featured ? ' featured' : ''}" href="${p.url}">
+function palavraCard(p) {
+  return `<a class="card palavra-card" href="${p.url}">
   <p class="meta">${escapeHtml(shortDate(p.date))}${p.data.contexto ? ` · ${escapeHtml(p.data.contexto)}` : ''}</p>
   <h3>${escapeHtml(p.title)}</h3>
   ${p.excerpt ? `<p class="excerpt">${escapeHtml(p.excerpt)}</p>` : ''}
   ${chips(p)}
+</a>`;
+}
+
+// Card editorial da última palavra: data em destaque, texto base e tempo de leitura
+function featuredCard(p) {
+  const [, m, d] = p.date.split('-');
+  const weekday = weekdayOf(p.date);
+  const texto = p.data['texto-base'] ?? [p.data['referências'] ?? []].flat()[0];
+  const tags = [texto, p.data.tema].filter(Boolean).map((t) => `<span class="chip">${escapeHtml(t)}</span>`).join('');
+  return `<a class="card featured" href="${p.url}">
+  <div class="featured-head">
+    <div class="date-tile" aria-hidden="true"><strong>${Number(d)}</strong><small>${MONTHS[Number(m) - 1]}</small></div>
+    <div>
+      <p class="meta">${escapeHtml([p.data.contexto, weekday].filter(Boolean).join(' · '))}</p>
+      <h3>${escapeHtml(p.title)}</h3>
+    </div>
+  </div>
+  ${p.excerpt ? `<p class="excerpt">${escapeHtml(p.excerpt)}</p>` : ''}
+  ${tags ? `<div class="chips">${tags}</div>` : ''}
+  <div class="featured-foot">
+    <span>${p.minutes} min de leitura</span>
+    <span class="cta">Ler palavra →</span>
+  </div>
 </a>`;
 }
 
@@ -222,7 +251,7 @@ function homePage({ palavras, series, proximo, assets }) {
 
 ${ultima ? `<section>
   <h2>Última palavra</h2>
-  ${palavraCard(ultima, { featured: true })}
+  ${featuredCard(ultima)}
 </section>` : ''}
 
 ${series.length ? `<section>
@@ -325,6 +354,7 @@ async function build() {
     p.serie?.palavras.push(p);
     p.html = renderMarkdown(p.body, links);
     p.excerpt = excerptOf(p.body);
+    p.minutes = Math.max(1, Math.round(toPlain(p.body).split(' ').length / 200));
     const refs = [p.data['referências'] ?? []].flat().join(' ');
     p.search = fold([p.title, p.data.tema, p.serie?.title, p.data.contexto, refs, [p.data.tags ?? []].flat().join(' '), toPlain(p.body)].filter(Boolean).join(' '));
   }

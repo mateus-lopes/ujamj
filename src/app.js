@@ -33,8 +33,10 @@ function renderNextGp(el) {
     : date === addDays(today, 1) ? '<span class="badge">Amanhã</span>' : '';
 
   const when = `${formatDate(date)}${gp.horario ? ` · ${esc(gp.horario)}` : ''}`;
-  const where = confirmed && gp.local
-    ? `<p class="gp-local">📍 ${esc(gp.local)}</p>${gp.endereco ? `<p class="gp-endereco">${esc(gp.endereco)}</p>` : ''}`
+  // Sem nome de local, o próprio endereço vira a linha principal
+  const place = gp.local || gp.endereco;
+  const where = confirmed && place
+    ? `<p class="gp-local">📍 ${esc(place)}</p>${gp.local && gp.endereco ? `<p class="gp-endereco">${esc(gp.endereco)}</p>` : ''}`
     : '<p class="gp-local muted">📍 Local a definir</p>';
   const mapUrl = gp.mapa || (gp.endereco ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(gp.endereco)}` : '');
   const actions = confirmed && mapUrl
