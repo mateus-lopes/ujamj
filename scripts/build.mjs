@@ -164,6 +164,7 @@ function layout({ title, description = SITE.description, content, assets, home =
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="${SITE.name}">
+<script>try { const t = localStorage.getItem('tema'); if (t) document.documentElement.dataset.theme = t; } catch {}</script>
 <link rel="stylesheet" href="${assets.css}">
 <script src="${assets.js}" defer></script>
 </head>
@@ -174,6 +175,7 @@ function layout({ title, description = SITE.description, content, assets, home =
       <img src="/icon.svg" alt="" width="32" height="32">
       <span><strong>${SITE.name}</strong><small>${SITE.fullName}</small></span>
     </a>
+    <button class="theme-toggle" type="button" data-theme-toggle aria-label="Trocar tema"></button>
   </div>
 </header>
 <main class="wrap">
