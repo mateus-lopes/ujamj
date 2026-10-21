@@ -1,9 +1,11 @@
-// ---------- Próximo grupo de jovens ----------
-// A data vem da nota "Próximo GP.md". Se ela já passou, mostramos a próxima quarta com "local a definir"
-// para nunca exibir o endereço de um encontro antigo. O tema não aparece: é surpresa.
+// ---------- Grupo de jovens: encontros desta semana e da próxima ----------
+// Os encontros vêm da nota "Próximo GP.md". Encontros com data passada somem sozinhos, para nunca exibir
+// o endereço de um encontro antigo. Sem encontro futuro, mostramos a próxima quarta com "local a definir".
+// O tema não aparece: é surpresa.
 
 const TZ = 'America/Sao_Paulo';
 const todayISO = () => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
+const DAY = 24 * 60 * 60 * 1000;
 
 function addDays(iso, days) {
   const d = new Date(`${iso}T12:00:00Z`);
@@ -11,9 +13,16 @@ function addDays(iso, days) {
   return d.toISOString().slice(0, 10);
 }
 
-function nextWednesday(iso) {
-  const day = new Date(`${iso}T12:00:00Z`).getUTCDay();
-  return addDays(iso, (3 - day + 7) % 7);
+const weekday = (iso) => new Date(`${iso}T12:00:00Z`).getUTCDay();
+const nextWednesday = (iso) => addDays(iso, (3 - weekday(iso) + 7) % 7);
+const weekStart = (iso) => new Date(`${addDays(iso, -weekday(iso))}T12:00:00Z`).getTime();
+
+function weekLabel(iso, today) {
+  const weeks = Math.round((weekStart(iso) - weekStart(today)) / (7 * DAY));
+  if (weeks === 0) return 'Esta semana';
+  if (weeks === 1) return 'Semana que vem';
+  const [, m, d] = iso.split('-');
+  return `${d}/${m}`;
 }
 
 function formatDate(iso) {
@@ -24,36 +33,61 @@ function formatDate(iso) {
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-function renderNextGp(el) {
-  const gp = JSON.parse(el.dataset.gp || '{}');
-  const today = todayISO();
-  const confirmed = Boolean(gp.data) && gp.data >= today;
-  const date = confirmed ? gp.data : nextWednesday(today);
-  const badge = date === today ? '<span class="badge">Hoje</span>'
-    : date === addDays(today, 1) ? '<span class="badge">Amanhã</span>' : '';
-
-  const when = `${formatDate(date)}${gp.horario ? ` · ${esc(gp.horario)}` : ''}`;
+function encontroHtml(e, today, first) {
+  const badge = e.data === today ? '<span class="badge">Hoje</span>'
+    : e.data === addDays(today, 1) ? '<span class="badge">Amanhã</span>' : '';
+  const when = `${formatDate(e.data)}${e.horario ? ` · ${esc(e.horario)}` : ''}`;
   // Sem nome de local, o próprio endereço vira a linha principal
-  const place = gp.local || gp.endereco;
-  const where = confirmed && place
-    ? `<p class="${gp.local ? 'gp-local' : 'gp-endereco'}">${esc(place)}</p>${gp.local && gp.endereco ? `<p class="gp-endereco">${esc(gp.endereco)}</p>` : ''}`
+  const place = e.local || e.endereco;
+  const where = place
+    ? `<p class="${e.local ? 'gp-local' : 'gp-endereco'}">${esc(place)}</p>${e.local && e.endereco ? `<p class="gp-endereco">${esc(e.endereco)}</p>` : ''}`
     : '<p class="gp-endereco muted">Local a definir</p>';
-  const query = gp.endereco || gp.local;
-  const mapUrl = gp.mapa || (query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : '');
-  const map = confirmed && query
+  const query = e.endereco || e.local;
+  const mapUrl = e.mapa || (query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : '');
+  const map = query
     ? `<div class="gp-map">
         <iframe src="https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=16&output=embed" title="Mapa do local" loading="lazy" tabindex="-1" referrerpolicy="no-referrer-when-downgrade"></iframe>
         <a class="gp-map-button" href="${esc(mapUrl)}" target="_blank" rel="noopener">Abrir no mapa ↗</a>
       </div>`
     : '';
-  const aviso = confirmed && gp.aviso ? `<p class="gp-aviso">${esc(gp.aviso)}</p>` : '';
+  const aviso = e.aviso ? `<p class="gp-aviso">${esc(e.aviso)}</p>` : '';
 
-  el.innerHTML = `${map}
+  return `${map}
     <div class="gp-body">
-      <p class="eyebrow">${badge}Próximo grupo de jovens</p>
+      <p class="eyebrow">${badge}${first ? 'Próximo grupo de jovens' : 'Grupo de jovens'}</p>
       <p class="gp-when">${when}</p>
       ${where}${aviso}
     </div>`;
+}
+
+function renderNextGp(el) {
+  const gp = JSON.parse(el.dataset.gp || '{}');
+  const today = todayISO();
+  const upcoming = (gp.encontros ?? [])
+    .filter((e) => e.data && e.data >= today)
+    .sort((a, b) => a.data.localeCompare(b.data))
+    .slice(0, 2);
+  if (!upcoming.length) upcoming.push({ data: nextWednesday(today), horario: gp.horario ?? '' });
+
+  let active = 0;
+  const paint = (focus = false) => {
+    const tabs = upcoming.length > 1
+      ? `<div class="gp-tabs" role="tablist" aria-label="Encontros">${upcoming.map((e, i) => `
+          <button type="button" role="tab" data-i="${i}" aria-selected="${i === active}" tabindex="${i === active ? 0 : -1}">${weekLabel(e.data, today)}</button>`).join('')}
+        </div>`
+      : '';
+    el.innerHTML = `${tabs}<div role="tabpanel">${encontroHtml(upcoming[active], today, active === 0)}</div>`;
+    el.querySelectorAll('[role="tab"]').forEach((tab) => {
+      tab.addEventListener('click', () => { active = Number(tab.dataset.i); paint(true); });
+      tab.addEventListener('keydown', (ev) => {
+        if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
+        active = (active + (ev.key === 'ArrowRight' ? 1 : -1) + upcoming.length) % upcoming.length;
+        paint(true);
+      });
+    });
+    if (focus) el.querySelector('[aria-selected="true"]')?.focus();
+  };
+  paint();
 }
 
 // ---------- Busca ----------

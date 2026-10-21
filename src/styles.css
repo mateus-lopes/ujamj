@@ -250,6 +250,41 @@ a.card:active { transform: scale(.99); }
   color: var(--hero-text);
 }
 
+/* Abas "Esta semana" / "Semana que vem" */
+.gp-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 12px 12px 0;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 22%);
+}
+.gp-tabs [role="tab"] {
+  flex: 1;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--hero-text);
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 600;
+  opacity: .8;
+  cursor: pointer;
+}
+.gp-tabs [aria-selected="true"] {
+  background: var(--hero-button-bg);
+  color: var(--hero-button-text);
+  opacity: 1;
+}
+.gp-tabs [role="tab"]:focus-visible { outline: 2px solid var(--hero-text); outline-offset: 2px; }
+.gp-tabs + [role="tabpanel"] .gp-map {
+  margin: 12px 12px 0;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--hero-border);
+}
+
 /* Prévia do mapa: listras de fundo aparecem se o mapa não carregar (offline) */
 .gp-map {
   position: relative;

@@ -381,13 +381,20 @@ async function build() {
   // Próximo GP: nota "Próximo GP.md" na raiz de 03-Igreja
   const gpFile = await findFile(CONTENT, 'Próximo GP.md');
   const gp = gpFile ? (await readNote(gpFile)).data : {};
+  // Lista de encontros; o horário do topo vale para todos, a menos que o encontro tenha o seu.
+  // O app (src/app.js) escolhe quais mostrar conforme a data de hoje.
+  const horario = gp['horário'] ? String(gp['horário']) : '';
+  const encontro = (e) => ({
+    data: e.data ? String(e.data) : '',
+    horario: e['horário'] ? String(e['horário']) : horario,
+    local: e.local ?? '',
+    endereco: e['endereço'] ?? '',
+    mapa: e.mapa ?? '',
+    aviso: e.aviso ?? '',
+  });
   const proximo = {
-    data: gp.data ? String(gp.data) : '',
-    horario: gp['horário'] ? String(gp['horário']) : '',
-    local: gp.local ?? '',
-    endereco: gp['endereço'] ?? '',
-    mapa: gp.mapa ?? '',
-    aviso: gp.aviso ?? '',
+    horario,
+    encontros: (Array.isArray(gp.encontros) ? gp.encontros : gp.data ? [gp] : []).map(encontro),
   };
 
   // Saída
@@ -445,7 +452,7 @@ async function build() {
   Cache-Control: public, max-age=31536000, immutable
 `);
 
-  console.log(`✓ ${palavras.length} palavras, ${series.length} séries · próximo GP: ${proximo.data || 'sem data'} · versão ${version}`);
+  console.log(`✓ ${palavras.length} palavras, ${series.length} séries · encontros: ${proximo.encontros.map((e) => e.data).join(', ') || 'nenhum'} · versão ${version}`);
 }
 
 await build();
