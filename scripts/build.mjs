@@ -38,12 +38,6 @@ function shortDate(iso) {
   const [y, m, d] = iso.split('-');
   return y && m && d ? `${Number(d)} ${MONTHS[Number(m) - 1]} ${y}` : iso;
 }
-function weekdayOf(iso) {
-  const date = new Date(`${iso}T12:00:00Z`);
-  if (Number.isNaN(date.getTime())) return '';
-  const text = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', timeZone: 'UTC' }).format(date);
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
 function longDate(iso) {
   const date = new Date(`${iso}T12:00:00Z`);
   if (Number.isNaN(date.getTime())) return iso;
@@ -125,6 +119,8 @@ function renderMarkdown(body, links) {
     .replace(/```dataview[\s\S]*?```\n?/g, '')
     .replace(/%%[\s\S]*?%%/g, '')
     .replace(/^\s*# .*\n/, '');
+  // Emojis no começo dos títulos (## 💡 Resumo) ficam só no Obsidian
+  md = md.replace(/^(#{1,6} +)(?:\d️?⃣|\p{Extended_Pictographic}|️|‍)+ */gmu, '$1');
   md = resolveWikilinks(md, links);
   const blocks = [];
   md = removeEmptySections(extractCallouts(md, blocks));
@@ -195,90 +191,59 @@ ${content}
 `;
 }
 
-function chips(p) {
-  const items = [];
-  if (p.serie) items.push(`<span class="chip chip-serie">${escapeHtml(p.serie.title)}</span>`);
-  if (p.data.tema) items.push(`<span class="chip">${escapeHtml(p.data.tema)}</span>`);
-  return items.length ? `<div class="chips">${items.join('')}</div>` : '';
+function metaOf(p, { withSerie = true } = {}) {
+  return [shortDate(p.date), p.data.contexto, withSerie && p.serie ? `Série ${p.serie.title}` : '']
+    .filter(Boolean).map(escapeHtml).join(' · ');
 }
 
 function palavraCard(p) {
-  return `<a class="card palavra-card" href="${p.url}">
-  <p class="meta">${escapeHtml(shortDate(p.date))}${p.data.contexto ? ` · ${escapeHtml(p.data.contexto)}` : ''}</p>
-  <h3>${escapeHtml(p.title)}</h3>
-  ${p.excerpt ? `<p class="excerpt">${escapeHtml(p.excerpt)}</p>` : ''}
-  ${chips(p)}
-</a>`;
-}
-
-// Card da grade "Todas as palavras": palavras de série ocupam a linha inteira e mostram o resumo maior
-function gridCard(p) {
-  const [, m, d] = p.date.split('-');
-  const meta = [`${Number(d)} ${MONTHS[Number(m) - 1]}`, p.data.contexto].filter(Boolean).map(escapeHtml).join(' · ');
-  const serie = p.serie ? ` · <span class="meta-serie">Série ${escapeHtml(p.serie.title)}</span>` : '';
-  return `<a class="card grid-card${p.serie ? ' wide' : ''}" href="${p.url}">
-  <p class="meta">${meta}${serie}</p>
-  <h3>${escapeHtml(p.title)}</h3>
-  ${p.excerpt ? `<p class="excerpt">${escapeHtml(p.excerpt)}</p>` : ''}
-  ${p.data.tema ? `<div class="chips"><span class="chip">${escapeHtml(p.data.tema)}</span></div>` : ''}
-</a>`;
-}
-
-// Card editorial da última palavra: data em destaque, texto base e tempo de leitura
-function featuredCard(p) {
-  const [, m, d] = p.date.split('-');
-  const weekday = weekdayOf(p.date);
-  const texto = p.data['texto-base'] ?? [p.data['referências'] ?? []].flat()[0];
-  const tags = [texto, p.data.tema].filter(Boolean).map((t) => `<span class="chip">${escapeHtml(t)}</span>`).join('');
-  return `<a class="card featured" href="${p.url}">
-  <div class="featured-head">
-    <div class="date-tile" aria-hidden="true"><strong>${Number(d)}</strong><small>${MONTHS[Number(m) - 1]}</small></div>
-    <div>
-      <p class="meta">${escapeHtml([p.data.contexto, weekday].filter(Boolean).join(' · '))}</p>
-      <h3>${escapeHtml(p.title)}</h3>
-    </div>
-  </div>
-  ${p.excerpt ? `<p class="excerpt">${escapeHtml(p.excerpt)}</p>` : ''}
-  ${tags ? `<div class="chips">${tags}</div>` : ''}
-  <div class="featured-foot">
-    <span>${p.minutes} min de leitura</span>
-    <span class="cta">Ler palavra →</span>
-  </div>
+  return `<a class="row" href="${p.url}">
+  <span class="meta">${metaOf(p, { withSerie: false })}</span>
+  <span class="row-title">${escapeHtml(p.title)}</span>
+  ${p.excerpt ? `<span class="excerpt">${escapeHtml(p.excerpt)}</span>` : ''}
 </a>`;
 }
 
 function homePage({ palavras, series, proximo, assets }) {
   const [ultima] = palavras;
-  const list = palavras.map((p) => `<li${p.serie ? ' class="wide"' : ''} data-search="${escapeHtml(p.search)}">${gridCard(p)}</li>`).join('\n');
-  const seriesHtml = series.map((s) => `<a class="card serie-card" href="${s.url}">
-    <p class="meta">${s.palavras.length} ${s.palavras.length === 1 ? 'palavra' : 'palavras'}${s.data.status ? ` · ${escapeHtml(s.data.status)}` : ''}</p>
-    <h3>${escapeHtml(s.title)}</h3>
-    ${s.excerpt ? `<p class="excerpt">${escapeHtml(s.excerpt)}</p>` : ''}
-  </a>`).join('\n');
+  const list = palavras.map((p) => `<li data-search="${escapeHtml(p.search)}"><a class="row" href="${p.url}">
+    <span class="meta">${metaOf(p)}</span>
+    <span class="row-title">${escapeHtml(p.title)}</span>
+    ${p.excerpt ? `<span class="excerpt">${escapeHtml(p.excerpt)}</span>` : ''}
+  </a></li>`).join('\n');
+  const seriesHtml = series.map((s) => `<li><a class="row" href="${s.url}">
+    <span class="meta">${s.palavras.length} ${s.palavras.length === 1 ? 'palavra' : 'palavras'}${s.data.status ? ` · ${escapeHtml(s.data.status)}` : ''}</span>
+    <span class="row-title">${escapeHtml(s.title)}</span>
+    ${s.excerpt ? `<span class="excerpt">${escapeHtml(s.excerpt)}</span>` : ''}
+  </a></li>`).join('\n');
 
   return `
-<section class="next-gp card" id="proximo-gp" data-gp="${escapeHtml(JSON.stringify(proximo))}" aria-live="polite">
-  <p class="eyebrow">Próximo grupo de jovens</p>
+<section class="next-gp" id="proximo-gp" data-gp="${escapeHtml(JSON.stringify(proximo))}" aria-live="polite">
+  <h2>Próximo grupo de jovens</h2>
   <noscript><p>Ative o JavaScript para ver o próximo encontro.</p></noscript>
 </section>
 
 ${ultima ? `<section>
   <h2>Última palavra</h2>
-  ${featuredCard(ultima)}
+  <a class="featured" href="${ultima.url}">
+    <span class="meta">${metaOf(ultima)}</span>
+    <span class="featured-title">${escapeHtml(ultima.title)}</span>
+    ${ultima.excerpt ? `<span class="excerpt">${escapeHtml(ultima.excerpt)}</span>` : ''}
+  </a>
 </section>` : ''}
 
 ${series.length ? `<section>
   <h2>Séries</h2>
-  <div class="grid">${seriesHtml}</div>
+  <ul class="rows">${seriesHtml}</ul>
 </section>` : ''}
 
 <section>
   <h2>Todas as palavras</h2>
   <label class="search">
     <span class="sr-only">Buscar</span>
-    <input type="search" id="busca" placeholder="Buscar por tema, versículo, palavra…" autocomplete="off">
+    <input type="search" id="busca" placeholder="Buscar por tema, versículo ou palavra" autocomplete="off">
   </label>
-  <ul class="palavra-list palavra-grid" id="lista">
+  <ul class="rows" id="lista">
 ${list}
   </ul>
   <p class="empty" id="vazio" hidden>Nenhuma palavra encontrada.</p>
@@ -289,16 +254,14 @@ function palavraPage(p, newer, older) {
   const nav = (item, label, cls) => item
     ? `<a class="pager-link ${cls}" href="${item.url}"><small>${label}</small><span>${escapeHtml(item.title)}</span></a>`
     : '<span></span>';
+  const meta = [escapeHtml(longDate(p.date)), escapeHtml(p.data.contexto ?? ''),
+    p.serie ? `Série <a href="${p.serie.url}">${escapeHtml(p.serie.title)}</a>` : ''].filter(Boolean).join(' · ');
   return `
 <article class="palavra">
-  <a class="back" href="/">← Início</a>
+  <a class="back" href="/">Início</a>
   <header class="palavra-header">
-    <p class="meta">${escapeHtml(longDate(p.date))}${p.data.contexto ? ` · ${escapeHtml(p.data.contexto)}` : ''}</p>
+    <p class="meta">${meta}</p>
     <h1>${escapeHtml(p.title)}</h1>
-    <div class="chips">
-      ${p.serie ? `<a class="chip chip-serie" href="${p.serie.url}">Série: ${escapeHtml(p.serie.title)}</a>` : ''}
-      ${p.data.tema ? `<span class="chip">${escapeHtml(p.data.tema)}</span>` : ''}
-    </div>
     <button class="share" type="button" data-share hidden>Compartilhar</button>
   </header>
   <div class="prose">
@@ -306,14 +269,14 @@ ${p.html}
   </div>
 </article>
 <nav class="pager" aria-label="Outras palavras">
-  ${nav(older, '← Anterior', 'prev')}
-  ${nav(newer, 'Próxima →', 'next')}
+  ${nav(older, 'Anterior', 'prev')}
+  ${nav(newer, 'Próxima', 'next')}
 </nav>`;
 }
 
 function seriePage(s) {
   return `
-<a class="back" href="/">← Início</a>
+<a class="back" href="/">Início</a>
 <header class="palavra-header">
   <p class="meta">Série${s.data['início'] ? ` · desde ${escapeHtml(shortDate(String(s.data['início'])))}` : ''}${s.data.status ? ` · ${escapeHtml(s.data.status)}` : ''}</p>
   <h1>${escapeHtml(s.title)}</h1>
@@ -323,7 +286,7 @@ ${s.html}
 </div>
 <section>
   <h2>Palavras da série</h2>
-  <ol class="palavra-list serie-list">
+  <ol class="rows">
     ${s.palavras.map((p) => `<li>${palavraCard(p)}</li>`).join('\n')}
   </ol>
 </section>`;
@@ -334,7 +297,7 @@ function notFoundPage() {
 <section class="not-found">
   <h1>Página não encontrada</h1>
   <p>Essa palavra pode ter mudado de endereço.</p>
-  <p><a href="/">← Voltar ao início</a></p>
+  <p><a href="/">Voltar ao início</a></p>
 </section>`;
 }
 
@@ -367,7 +330,6 @@ async function build() {
     p.serie?.palavras.push(p);
     p.html = renderMarkdown(p.body, links);
     p.excerpt = excerptOf(p.body);
-    p.minutes = Math.max(1, Math.round(toPlain(p.body).split(' ').length / 200));
     const refs = [p.data['referências'] ?? []].flat().join(' ');
     p.search = fold([p.title, p.data.tema, p.serie?.title, p.data.contexto, refs, [p.data.tags ?? []].flat().join(' '), toPlain(p.body)].filter(Boolean).join(' '));
   }
