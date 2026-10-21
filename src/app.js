@@ -33,30 +33,31 @@ function formatDate(iso) {
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-function encontroHtml(e) {
+function encontroHtml(e, today, first) {
+  const badge = e.data === today ? '<span class="badge">Hoje</span>'
+    : e.data === addDays(today, 1) ? '<span class="badge">Amanhã</span>' : '';
   const when = `${formatDate(e.data)}${e.horario ? ` · ${esc(e.horario)}` : ''}`;
   // Sem nome de local, o próprio endereço vira a linha principal
   const place = e.local || e.endereco;
   const where = place
-    ? `<p class="gp-local">${esc(place)}</p>${e.local && e.endereco ? `<p class="gp-endereco">${esc(e.endereco)}</p>` : ''}`
-    : '<p class="gp-endereco">Local a definir</p>';
+    ? `<p class="${e.local ? 'gp-local' : 'gp-endereco'}">${esc(place)}</p>${e.local && e.endereco ? `<p class="gp-endereco">${esc(e.endereco)}</p>` : ''}`
+    : '<p class="gp-endereco muted">Local a definir</p>';
   const query = e.endereco || e.local;
   const mapUrl = e.mapa || (query ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}` : '');
   const map = query
-    ? `<p class="gp-link"><a href="${esc(mapUrl)}" target="_blank" rel="noopener">Abrir no mapa</a></p>
-      <div class="gp-map">
+    ? `<div class="gp-map">
         <iframe src="https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=16&output=embed" title="Mapa do local" loading="lazy" tabindex="-1" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <a class="gp-map-button" href="${esc(mapUrl)}" target="_blank" rel="noopener">Abrir no mapa ↗</a>
       </div>`
     : '';
   const aviso = e.aviso ? `<p class="gp-aviso">${esc(e.aviso)}</p>` : '';
-  return `<p class="gp-when">${when}</p>${where}${aviso}${map}`;
-}
 
-// Rótulo do encontro desta semana: "Hoje", "Amanhã" ou "Esta semana"
-function firstLabel(e, today) {
-  if (e.data === today) return 'Hoje';
-  if (e.data === addDays(today, 1)) return 'Amanhã';
-  return weekLabel(e.data, today);
+  return `${map}
+    <div class="gp-body">
+      <p class="eyebrow">${badge}${first ? 'Próximo grupo de jovens' : 'Grupo de jovens'}</p>
+      <p class="gp-when">${when}</p>
+      ${where}${aviso}
+    </div>`;
 }
 
 function renderNextGp(el) {
@@ -68,22 +69,19 @@ function renderNextGp(el) {
     .slice(0, 2);
   if (!upcoming.length) upcoming.push({ data: nextWednesday(today), horario: gp.horario ?? '' });
 
-  // Os próprios rótulos do topo funcionam como abas
-  const labels = upcoming.length > 1
-    ? [firstLabel(upcoming[0], today), 'Próximo grupo de jovens']
-    : [['Hoje', 'Amanhã'].includes(firstLabel(upcoming[0], today)) ? firstLabel(upcoming[0], today) : 'Próximo grupo de jovens'];
-
   let active = 0;
   const paint = (focus = false) => {
-    const tabs = labels.length > 1
-      ? `<div class="gp-tabs" role="tablist" aria-label="Encontros">${labels.map((label, i) => `<button type="button" role="tab" data-i="${i}" aria-selected="${i === active}" tabindex="${i === active ? 0 : -1}">${label}</button>`).join('')}</div>`
-      : `<div class="gp-tabs"><span class="gp-tab-static">${labels[0]}</span></div>`;
-    el.innerHTML = `${tabs}<div role="tabpanel">${encontroHtml(upcoming[active])}</div>`;
+    const tabs = upcoming.length > 1
+      ? `<div class="gp-tabs" role="tablist" aria-label="Encontros">${upcoming.map((e, i) => `
+          <button type="button" role="tab" data-i="${i}" aria-selected="${i === active}" tabindex="${i === active ? 0 : -1}">${weekLabel(e.data, today)}</button>`).join('')}
+        </div>`
+      : '';
+    el.innerHTML = `${tabs}<div role="tabpanel">${encontroHtml(upcoming[active], today, active === 0)}</div>`;
     el.querySelectorAll('[role="tab"]').forEach((tab) => {
       tab.addEventListener('click', () => { active = Number(tab.dataset.i); paint(true); });
       tab.addEventListener('keydown', (ev) => {
         if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
-        active = (active + (ev.key === 'ArrowRight' ? 1 : -1) + labels.length) % labels.length;
+        active = (active + (ev.key === 'ArrowRight' ? 1 : -1) + upcoming.length) % upcoming.length;
         paint(true);
       });
     });
