@@ -33,9 +33,7 @@ function formatDate(iso) {
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
-function encontroHtml(e, today, first) {
-  const badge = e.data === today ? '<span class="badge">Hoje</span>'
-    : e.data === addDays(today, 1) ? '<span class="badge">Amanhã</span>' : '';
+function encontroHtml(e, eyebrow) {
   const when = `${formatDate(e.data)}${e.horario ? ` · ${esc(e.horario)}` : ''}`;
   // Sem nome de local, o próprio endereço vira a linha principal
   const place = e.local || e.endereco;
@@ -54,10 +52,17 @@ function encontroHtml(e, today, first) {
 
   return `${map}
     <div class="gp-body">
-      <p class="eyebrow">${badge}${first ? 'Próximo grupo de jovens' : 'Grupo de jovens'}</p>
+      ${eyebrow}
       <p class="gp-when">${when}</p>
       ${where}${aviso}
     </div>`;
+}
+
+// Rótulo do encontro desta semana: "Hoje", "Amanhã" ou "Esta semana"
+function firstLabel(e, today) {
+  if (e.data === today) return 'Hoje';
+  if (e.data === addDays(today, 1)) return 'Amanhã';
+  return weekLabel(e.data, today);
 }
 
 function renderNextGp(el) {
@@ -71,12 +76,17 @@ function renderNextGp(el) {
 
   let active = 0;
   const paint = (focus = false) => {
-    const tabs = upcoming.length > 1
-      ? `<div class="gp-tabs" role="tablist" aria-label="Encontros">${upcoming.map((e, i) => `
-          <button type="button" role="tab" data-i="${i}" aria-selected="${i === active}" tabindex="${i === active ? 0 : -1}">${weekLabel(e.data, today)}</button>`).join('')}
-        </div>`
-      : '';
-    el.innerHTML = `${tabs}<div role="tabpanel">${encontroHtml(upcoming[active], today, active === 0)}</div>`;
+    let eyebrow;
+    if (upcoming.length > 1) {
+      // Os próprios rótulos do topo são as abas: o ativo fica com o selo, o outro é só texto
+      const labels = [firstLabel(upcoming[0], today), 'Próximo grupo de jovens'];
+      eyebrow = `<div class="eyebrow" role="tablist" aria-label="Encontros">${labels.map((label, i) => `<button type="button" role="tab" class="gp-tab" data-i="${i}" aria-selected="${i === active}" tabindex="${i === active ? 0 : -1}">${label}</button>`).join('')}</div>`;
+    } else {
+      const label = firstLabel(upcoming[0], today);
+      const badge = ['Hoje', 'Amanhã'].includes(label) ? `<span class="badge">${label}</span>` : '';
+      eyebrow = `<p class="eyebrow">${badge}Próximo grupo de jovens</p>`;
+    }
+    el.innerHTML = encontroHtml(upcoming[active], eyebrow);
     el.querySelectorAll('[role="tab"]').forEach((tab) => {
       tab.addEventListener('click', () => { active = Number(tab.dataset.i); paint(true); });
       tab.addEventListener('keydown', (ev) => {
