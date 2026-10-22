@@ -250,24 +250,6 @@ a.card:active { transform: scale(.99); }
   color: var(--hero-text);
 }
 
-/* Rótulos do topo funcionando como abas: o ativo ganha o selo, o outro fica como texto */
-.gp-tab {
-  padding: 2px 8px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  letter-spacing: inherit;
-  text-transform: inherit;
-  cursor: pointer;
-}
-.gp-tab[aria-selected="true"] {
-  background: var(--hero-button-bg);
-  color: var(--hero-button-text);
-}
-.gp-tab:focus-visible { outline: 2px solid var(--hero-eyebrow); outline-offset: 2px; }
-
 /* Prévia do mapa: listras de fundo aparecem se o mapa não carregar (offline) */
 .gp-map {
   position: relative;
@@ -305,17 +287,6 @@ a.card:active { transform: scale(.99); }
   text-transform: uppercase;
   letter-spacing: .1em;
   color: var(--hero-eyebrow);
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.badge {
-  background: var(--hero-button-bg);
-  color: var(--hero-button-text);
-  border-radius: 6px;
-  padding: 2px 8px;
-  font-size: .72rem;
-  letter-spacing: .08em;
 }
 .gp-when { font-size: 1.5rem; font-weight: 700; margin: 10px 0 6px; line-height: 1.25; }
 .gp-local { margin: 0; font-weight: 600; }

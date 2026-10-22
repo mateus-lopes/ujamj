@@ -382,7 +382,7 @@ async function build() {
   const gpFile = await findFile(CONTENT, 'Próximo GP.md');
   const gp = gpFile ? (await readNote(gpFile)).data : {};
   // Lista de encontros; o horário do topo vale para todos, a menos que o encontro tenha o seu.
-  // O app (src/app.js) escolhe quais mostrar conforme a data de hoje.
+  // O app (src/app.js) mostra o primeiro da lista até a nota ser atualizada.
   const horario = gp['horário'] ? String(gp['horário']) : '';
   const encontro = (e) => ({
     data: e.data ? String(e.data) : '',

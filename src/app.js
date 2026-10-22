@@ -1,11 +1,10 @@
-// ---------- Grupo de jovens: encontros desta semana e da próxima ----------
-// Os encontros vêm da nota "Próximo GP.md". Encontros com data passada somem sozinhos, para nunca exibir
-// o endereço de um encontro antigo. Sem encontro futuro, mostramos a próxima quarta com "local a definir".
-// O tema não aparece: é surpresa.
+// ---------- Próximo grupo de jovens ----------
+// Mostra o primeiro encontro da nota "Próximo GP.md" e deixa ali até a nota ser atualizada
+// (ela é atualizada no dia seguinte a cada GP). Sem encontro na nota, mostramos a próxima quarta
+// com "local a definir". O tema não aparece: é surpresa.
 
 const TZ = 'America/Sao_Paulo';
 const todayISO = () => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(new Date());
-const DAY = 24 * 60 * 60 * 1000;
 
 function addDays(iso, days) {
   const d = new Date(`${iso}T12:00:00Z`);
@@ -15,15 +14,6 @@ function addDays(iso, days) {
 
 const weekday = (iso) => new Date(`${iso}T12:00:00Z`).getUTCDay();
 const nextWednesday = (iso) => addDays(iso, (3 - weekday(iso) + 7) % 7);
-const weekStart = (iso) => new Date(`${addDays(iso, -weekday(iso))}T12:00:00Z`).getTime();
-
-function weekLabel(iso, today) {
-  const weeks = Math.round((weekStart(iso) - weekStart(today)) / (7 * DAY));
-  if (weeks === 0) return 'Esta semana';
-  if (weeks === 1) return 'Semana que vem';
-  const [, m, d] = iso.split('-');
-  return `${d}/${m}`;
-}
 
 function formatDate(iso) {
   const text = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
@@ -58,46 +48,10 @@ function encontroHtml(e, eyebrow) {
     </div>`;
 }
 
-// Rótulo do encontro desta semana: "Hoje", "Amanhã" ou "Esta semana"
-function firstLabel(e, today) {
-  if (e.data === today) return 'Hoje';
-  if (e.data === addDays(today, 1)) return 'Amanhã';
-  return weekLabel(e.data, today);
-}
-
 function renderNextGp(el) {
   const gp = JSON.parse(el.dataset.gp || '{}');
-  const today = todayISO();
-  const upcoming = (gp.encontros ?? [])
-    .filter((e) => e.data && e.data >= today)
-    .sort((a, b) => a.data.localeCompare(b.data))
-    .slice(0, 2);
-  if (!upcoming.length) upcoming.push({ data: nextWednesday(today), horario: gp.horario ?? '' });
-
-  let active = 0;
-  const paint = (focus = false) => {
-    let eyebrow;
-    if (upcoming.length > 1) {
-      // Os próprios rótulos do topo são as abas: o ativo fica com o selo, o outro é só texto
-      const labels = [firstLabel(upcoming[0], today), 'Próximo grupo de jovens'];
-      eyebrow = `<div class="eyebrow" role="tablist" aria-label="Encontros">${labels.map((label, i) => `<button type="button" role="tab" class="gp-tab" data-i="${i}" aria-selected="${i === active}" tabindex="${i === active ? 0 : -1}">${label}</button>`).join('')}</div>`;
-    } else {
-      const label = firstLabel(upcoming[0], today);
-      const badge = ['Hoje', 'Amanhã'].includes(label) ? `<span class="badge">${label}</span>` : '';
-      eyebrow = `<p class="eyebrow">${badge}Próximo grupo de jovens</p>`;
-    }
-    el.innerHTML = encontroHtml(upcoming[active], eyebrow);
-    el.querySelectorAll('[role="tab"]').forEach((tab) => {
-      tab.addEventListener('click', () => { active = Number(tab.dataset.i); paint(true); });
-      tab.addEventListener('keydown', (ev) => {
-        if (ev.key !== 'ArrowLeft' && ev.key !== 'ArrowRight') return;
-        active = (active + (ev.key === 'ArrowRight' ? 1 : -1) + upcoming.length) % upcoming.length;
-        paint(true);
-      });
-    });
-    if (focus) el.querySelector('[aria-selected="true"]')?.focus();
-  };
-  paint();
+  const encontro = (gp.encontros ?? []).find((e) => e.data) ?? { data: nextWednesday(todayISO()), horario: gp.horario ?? '' };
+  el.innerHTML = encontroHtml(encontro, '<p class="eyebrow">Próximo grupo de jovens</p>');
 }
 
 // ---------- Busca ----------
