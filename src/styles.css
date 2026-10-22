@@ -265,10 +265,17 @@ a.card:active { transform: scale(.99); }
   border: 0;
   pointer-events: none;
 }
-.gp-map-button {
+/* botões sobre o mapa: adicionar à agenda e abrir no mapa */
+.gp-actions {
   position: absolute;
   right: 12px;
   bottom: 12px;
+  display: flex;
+  gap: 8px;
+}
+.gp-agenda-only { padding-bottom: 0; }
+.gp-map-button {
+  display: inline-block;
   padding: 7px 14px;
   border-radius: 999px;
   background: #141210;

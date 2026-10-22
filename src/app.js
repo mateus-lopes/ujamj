@@ -23,6 +23,24 @@ function formatDate(iso) {
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
+// Link do Google Agenda com o evento já preenchido (duração padrão de 2 horas)
+function agendaUrl(e) {
+  const [h, m] = (e.horario || '20:30').split(':').map(Number);
+  const stamp = (iso, hh, mm) => `${iso.replace(/-/g, '')}T${String(hh).padStart(2, '0')}${String(mm).padStart(2, '0')}00`;
+  const endH = h + 2;
+  const end = endH >= 24 ? stamp(addDays(e.data, 1), endH - 24, m) : stamp(e.data, endH, m);
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: 'Grupo de jovens · UJAMJ',
+    dates: `${stamp(e.data, h, m)}/${end}`,
+    ctz: TZ,
+    details: `GP da UJAMJ${e.local ? ` na ${e.local}` : ''}.
+${location.origin}`,
+    location: [e.local, e.endereco].filter(Boolean).join(' · '),
+  });
+  return `https://calendar.google.com/calendar/render?${params}`;
+}
+
 function encontroHtml(e, eyebrow) {
   const when = `${formatDate(e.data)}${e.horario ? ` · ${esc(e.horario)}` : ''}`;
   // Sem nome de local, o próprio endereço vira a linha principal
@@ -35,9 +53,12 @@ function encontroHtml(e, eyebrow) {
   const map = query
     ? `<div class="gp-map">
         <iframe src="https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=16&output=embed" title="Mapa do local" loading="lazy" tabindex="-1" referrerpolicy="no-referrer-when-downgrade"></iframe>
-        <a class="gp-map-button" href="${esc(mapUrl)}" target="_blank" rel="noopener">Abrir no mapa ↗</a>
+        <div class="gp-actions">
+          <a class="gp-map-button" href="${esc(agendaUrl(e))}" target="_blank" rel="noopener">+ Agenda</a>
+          <a class="gp-map-button" href="${esc(mapUrl)}" target="_blank" rel="noopener">Abrir no mapa ↗</a>
+        </div>
       </div>`
-    : '';
+    : `<div class="gp-body gp-agenda-only"><a class="gp-map-button" href="${esc(agendaUrl(e))}" target="_blank" rel="noopener">+ Agenda</a></div>`;
   const aviso = e.aviso ? `<p class="gp-aviso">${esc(e.aviso)}</p>` : '';
 
   return `${map}
