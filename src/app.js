@@ -54,11 +54,11 @@ function encontroHtml(e, eyebrow) {
     ? `<div class="gp-map">
         <iframe src="https://maps.google.com/maps?q=${encodeURIComponent(query)}&z=16&output=embed" title="Mapa do local" loading="lazy" tabindex="-1" referrerpolicy="no-referrer-when-downgrade"></iframe>
         <div class="gp-actions">
-          <a class="gp-map-button" href="${esc(agendaUrl(e))}" target="_blank" rel="noopener">+ Agenda</a>
+          <a class="gp-map-button" href="${esc(agendaUrl(e))}" target="_blank" rel="noopener">Agenda +</a>
           <a class="gp-map-button" href="${esc(mapUrl)}" target="_blank" rel="noopener">Abrir no mapa ↗</a>
         </div>
       </div>`
-    : `<div class="gp-body gp-agenda-only"><a class="gp-map-button" href="${esc(agendaUrl(e))}" target="_blank" rel="noopener">+ Agenda</a></div>`;
+    : `<div class="gp-body gp-agenda-only"><a class="gp-map-button" href="${esc(agendaUrl(e))}" target="_blank" rel="noopener">Agenda +</a></div>`;
   const aviso = e.aviso ? `<p class="gp-aviso">${esc(e.aviso)}</p>` : '';
 
   return `${map}
