@@ -121,6 +121,18 @@ function setupThemeToggle(button) {
   paint();
 }
 
+// ---------- Apresentação ----------
+// Quem toca em "Abrir o app" não vê mais a apresentação neste aparelho (dá para rever em /?sobre).
+
+function setupLanding(button) {
+  button.addEventListener('click', () => {
+    try { localStorage.setItem('ujamj:entrou', '1'); } catch {}
+    document.documentElement.classList.remove('show-landing');
+    if (location.search) history.replaceState(null, '', location.pathname);
+    window.scrollTo(0, 0);
+  });
+}
+
 // ---------- Compartilhar ----------
 
 function setupShare(button) {
@@ -137,6 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const busca = document.getElementById('busca');
   if (busca) setupSearch(busca);
   document.querySelectorAll('[data-share]').forEach(setupShare);
+  document.querySelectorAll('[data-entrar]').forEach(setupLanding);
   document.querySelectorAll('[data-theme-toggle]').forEach(setupThemeToggle);
 });
 

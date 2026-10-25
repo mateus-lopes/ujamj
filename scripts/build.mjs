@@ -152,7 +152,41 @@ function excerptOf(body) {
 
 // ---------- templates ----------
 
-function layout({ title, description = SITE.description, content, assets, home = false }) {
+// Apresentação na página inicial. Aparece para quem nunca abriu o app neste aparelho (ou abriu /?sobre);
+// o app instalado e quem já entrou vão direto ao conteúdo. A decisão roda no <head>, antes de pintar a tela.
+const LANDING_GATE = `<script>try { const q = new URLSearchParams(location.search).has('sobre'); const app = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; if (q || (!app && localStorage.getItem('ujamj:entrou') !== '1')) document.documentElement.classList.add('show-landing'); } catch {}</script>`;
+
+const LANDING_ICONS = {
+  pin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h6a4 4 0 0 1 4 4v13a3 3 0 0 0-3-3H2z"/><path d="M22 4h-6a4 4 0 0 0-4 4v13a3 3 0 0 1 3-3h7z"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
+};
+
+function landing({ palavras, series }) {
+  const stats = [
+    `${palavras.length} ${palavras.length === 1 ? 'palavra' : 'palavras'}`,
+    series.length ? `${series.length} ${series.length === 1 ? 'série' : 'séries'}` : '',
+  ].filter(Boolean).join(' · ');
+  const recurso = (icon, titulo, texto) => `<li><span class="landing-icon" aria-hidden="true">${LANDING_ICONS[icon]}</span><div><strong>${titulo}</strong><p>${texto}</p></div></li>`;
+  return `<div class="landing" id="landing" role="dialog" aria-modal="true" aria-labelledby="landing-titulo">
+  <div class="landing-inner">
+    <p class="landing-brand"><img src="/icon.svg" alt="" width="40" height="40"><span><strong>${SITE.name}</strong><small>${SITE.fullName}</small></span></p>
+    <p class="landing-eyebrow">Palavras do GP</p>
+    <h1 id="landing-titulo">A palavra de cada GP, sempre à mão.</h1>
+    <p class="landing-lead">Tudo o que foi ministrado na mocidade, as séries e o próximo encontro, num app que funciona até sem internet.</p>
+    ${stats ? `<p class="landing-stats">${escapeHtml(stats)} publicadas</p>` : ''}
+    <ul class="landing-recursos">
+      ${recurso('pin', 'Próximo GP', 'Data, local, mapa e um toque para salvar na agenda.')}
+      ${recurso('book', 'Palavras e séries', 'Texto base, versículos e perguntas para pensar depois.')}
+      ${recurso('search', 'Busca e offline', 'Ache por tema ou versículo, mesmo sem sinal.')}
+    </ul>
+    <button class="landing-cta" type="button" data-entrar>Abrir o app <span aria-hidden="true">→</span></button>
+    <p class="landing-dica">Dica: no celular, “Adicionar à tela inicial” instala o app.</p>
+  </div>
+</div>`;
+}
+
+function layout({ title, description = SITE.description, content, assets, home = false, intro = '' }) {
   const pageTitle = title ? `${title} · ${SITE.name}` : `${SITE.name} · Palavras do GP`;
   return `<!doctype html>
 <html lang="pt-BR">
@@ -171,10 +205,12 @@ function layout({ title, description = SITE.description, content, assets, home =
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-title" content="${SITE.name}">
 <script>try { const t = localStorage.getItem('tema'); if (t) document.documentElement.dataset.theme = t; } catch {}</script>
+${intro ? LANDING_GATE : ''}
 <link rel="stylesheet" href="${assets.css}">
 <script src="${assets.js}" defer></script>
 </head>
 <body>
+${intro}
 <header class="site-header">
   <div class="wrap">
     <a class="brand" href="/" ${home ? 'aria-current="page"' : ''}>
@@ -188,7 +224,7 @@ function layout({ title, description = SITE.description, content, assets, home =
 ${content}
 </main>
 <footer class="site-footer wrap">
-  <p>${SITE.fullName}</p>
+  <p>${SITE.fullName} · <a href="/?sobre">Sobre o app</a></p>
 </footer>
 </body>
 </html>
@@ -411,7 +447,7 @@ async function build() {
   for (const f of await readdir(path.join(SRC, 'icons'))) await copyFile(path.join(SRC, 'icons', f), path.join(OUT, 'icons', f));
 
   const pages = new Map();
-  pages.set('/', layout({ content: homePage({ palavras, series, proximo, assets }), assets, home: true }));
+  pages.set('/', layout({ content: homePage({ palavras, series, proximo, assets }), assets, home: true, intro: landing({ palavras, series }) }));
   palavras.forEach((p, i) => pages.set(p.url, layout({
     title: p.title, description: p.excerpt || SITE.description, assets,
     content: palavraPage(p, palavras[i - 1], palavras[i + 1]),
