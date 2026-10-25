@@ -478,8 +478,9 @@ async function build() {
   const precache = [...pages.keys(), assets.css, assets.js, '/icon.svg', '/manifest.webmanifest', '/icons/icon-192.png'];
   const version = hash([...pages.values()].join('') + css + js);
   const sw = (await readFile(path.join(SRC, 'sw.js'), 'utf8'))
-    .replace('__VERSION__', version)
-    .replace('__PRECACHE__', JSON.stringify(precache));
+    // Troca as atribuições, não o comentário do topo (que também cita os marcadores)
+    .replace("'ujamj-__VERSION__'", `'ujamj-${version}'`)
+    .replace('= __PRECACHE__;', `= ${JSON.stringify(precache)};`);
   await writeFile(path.join(OUT, 'sw.js'), sw);
 
   await writeFile(path.join(OUT, '_headers'), `/sw.js
